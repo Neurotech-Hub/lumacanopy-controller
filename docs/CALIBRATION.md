@@ -1,0 +1,73 @@
+# LumaCanopy bring-up and calibration
+
+This is the bench procedure for first power-on and for filling the two
+calibration tables in [`src/Config.h`](../src/Config.h): `kDimCalibration`
+(converter volts to PWM duty) and `kKnobLevels` (8-position knob to user level).
+
+The tables ship as **placeholders** (linear duty, evenly-spaced knob levels).
+They are safe to flash and let you verify wiring, but the perceived brightness
+will not be right until you replace them with measured values.
+
+## 0. Before power-on (do not skip)
+
+- Fit **10 k pulldowns to GND on GPIO8 (A5, PWM)** and **GPIO14 (A4, relay)**.
+  Both pins float from reset until firmware configures them; without pulldowns
+  the relay can chatter closed with an uncontrolled dim voltage at boot.
+- Confirm the relay's **DC** rating covers the load at 12 V. Dimming floors at
+  ~10% output, so opening the relay always breaks at least ~2.2 A DC per driver.
+- Keep `DIM-` off the driver's `-V` rail (Mean Well explicitly warns against it).
+- Verify the converter board sinks ~200 uA total (100 uA per driver, both
+  `DIM+` lines paralleled).
+
+## 1. Smoke test (no load)
+
+1. Flash, open Serial at 115200. You should see `Ready.`
+2. Type `status`. Confirm mode `master`, relay `open`, lockout `no`.
+3. Flip the kill switch (A2). `status` should now show lockout `YES` and the
+   status LED should fast-blink. Flip back; lockout clears.
+4. Rotate the knob through all 8 positions. Each detent should change
+   `knob pos` in `status` and, with output on, change the level.
+
+## 2. Converter calibration (`kDimCalibration`)
+
+Goal: learn the real PWM-duty -> DIM-volts transfer curve of your converter
+board. Put a voltmeter across `DIM+/DIM-`.
+
+1. `cal hold` — suspends the arbiter so it stops driving the PWM.
+2. `cal reset`, then `cal step` repeatedly. Each `step` sets duty to
+   0%, 10%, ... 100% and prints the duty. Record the measured DIM volts at each.
+   (You can also set arbitrary points with `cal duty <pct>`.)
+3. `cal release` when done.
+4. Enter your readings into `kDimCalibration` as `{volts, duty01}` pairs, sorted
+   by ascending volts. Example if 60% duty measured 5.9 V: `{5.9f, 0.60f}`.
+   The firmware interpolates between points, so 6-11 points is plenty.
+
+Note: many 0-10V converter boards are close to linear but have offset/clipping
+near the rails — that is exactly what this step captures.
+
+## 3. Current cap (`kMaxLoadAmps`)
+
+1. Wire the real strip and a clamp meter on the DC output.
+2. With `cal hold`, step duty upward and watch current. Set `kMaxLoadAmps` to
+   your chosen ceiling (18.0 or 19.4). `kMaxOutputPercent` is derived from it and
+   hard-clamps the PWM so it can never command more than that.
+3. Because the strip is a constant-voltage load and B-type dimming adjusts the
+   constant-current setpoint, expect a **dead zone** at the top (driver stays in
+   CV at 12 V) and nonlinearity below it. Note the duty where current first
+   starts to drop — that is the real top of your usable range.
+
+## 4. Knob levels (`kKnobLevels`)
+
+With the cap set, decide what each of the 8 detents should mean as a *user
+level* (0..100%, which the firmware maps into `[floor .. kMaxOutputPercent]`).
+Drive levels with `level <pct>`, read the clamp meter, and pick 8 values that
+give the visual steps you want. Fill `kKnobLevels[8]` and re-flash.
+
+## 5. Verify arbitration
+
+- Knob to pos 2. Then `level 80` (remote). The level LED should start breathing.
+- Turn the knob to pos 5. Control should snap back to master at pos 5's level;
+  the level LED goes steady. (Movement reclaims master, not a specific value.)
+- `release` returns control to the knob explicitly.
+- Flip the kill switch at any time: output opens regardless of source, and
+  neither knob nor remote can override until it is released.
