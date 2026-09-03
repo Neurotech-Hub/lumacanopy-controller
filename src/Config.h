@@ -19,7 +19,9 @@ constexpr uint8_t kDimPwm = 8; // A5
 // Relay coil (DC output side, normally open). Active-high drive.
 constexpr uint8_t kRelay = 14; // A4
 
-// Maintained external kill switch. INPUT_PULLUP, active-low.
+// Maintained panel switch on A2. One pole to GND, the other to this GPIO
+// (internal pull-up). Closed (pin LOW) = labeled ON = output allowed.
+// Open (pin HIGH) = labeled OFF = lockout.
 constexpr uint8_t kKillSwitch = 16; // A2
 
 // 8-position rotary switch. Common wire to GND; each position pulls its pin low.
@@ -43,7 +45,31 @@ constexpr uint8_t kLevelLed = 17; // A1
 
 // Onboard blue LED, reserved for Wi-Fi / diagnostic status.
 constexpr uint8_t kWifiLed = 33;
+
+// Unused Raven rails. Both enables are active-low; drive HIGH to keep them off.
+constexpr uint8_t kI2cEnable = 7;
+constexpr uint8_t kSdEnable = 45;
 } // namespace pins
+
+// Minimal Raven bring-up without the Hublink-Node-Raven library (that library
+// compiles unused ULP magnet-counter / meta-editor code and its beginHardware()
+// would reset A5/A4 back to INPUT).
+inline void beginBoard() {
+  setCpuFrequencyMhz(80);
+
+  pinMode(pins::kDimPwm, OUTPUT);
+  digitalWrite(pins::kDimPwm, LOW);
+  pinMode(pins::kRelay, OUTPUT);
+  digitalWrite(pins::kRelay, LOW);
+
+  pinMode(pins::kI2cEnable, OUTPUT);
+  digitalWrite(pins::kI2cEnable, HIGH);
+  pinMode(pins::kSdEnable, OUTPUT);
+  digitalWrite(pins::kSdEnable, HIGH);
+
+  pinMode(pins::kWifiLed, OUTPUT);
+  digitalWrite(pins::kWifiLed, LOW);
+}
 
 // ---------------------------------------------------------------------------
 // Dimming PWM (to the converter board).
@@ -60,18 +86,23 @@ constexpr uint32_t kLevelLedMaxDuty = (1u << kLevelLedResBits) - 1u;
 // ---------------------------------------------------------------------------
 // Current / output caps.
 //
-// The driver is rated to 22 A at 100% output. kMaxLoadAmps is the real-world
-// ceiling of the installed strip; flip it to 19.4 once the extra LEDs are
-// added. kMaxOutputPercent is the hard clamp on driver output so the PWM can
-// never command more current than the load is rated for.
+// THE knob for later: change kMaxLoadAmps only. The driver is 22 A at 10 V DIM.
+//  We never command 10 V unless the load is actually 22 A. 
+// User 0..100% maps to 0 V .. kMaxDimVolts, then PWM duty is looked up in 
+// kDimCalibration (replace that table once the converter is measured -- 
+// it is independent of the load cap).
+//
+// Datasheet: DIM volts ~= 10 * (amps / 22). 6 A -> 2.73 V, 18 A -> 8.18 V.
 // ---------------------------------------------------------------------------
 constexpr float kDriverRatedAmps = 22.0f;
-constexpr float kMaxLoadAmps = 18.0f; // TODO(bench): confirm 18.0 vs 19.4 with the real strip
+constexpr float kMaxLoadAmps = 22.0f; // TODO(bench): raise to 18.0 after the strip is known
 constexpr float kMaxOutputPercent = (kMaxLoadAmps / kDriverRatedAmps) * 100.0f;
+constexpr float kMinDimVolts = 0.0f;
+constexpr float kMaxDimVolts = 10.0f * (kMaxLoadAmps / kDriverRatedAmps);
 
-// The B-type dim curve floors at 10% output (1 V on DIM). 0 V still draws the
-// floor current, which is why the relay exists for true shutoff.
-constexpr float kFloorOutputPercent = 10.0f;
+// Commanded "off" / pre-relay-open DIM target. 0 V is still ~10% driver
+// current on HLG-B; the relay is the true shutoff.
+constexpr float kFloorOutputPercent = 0.0f;
 
 // ---------------------------------------------------------------------------
 // Behaviour timing.
@@ -81,6 +112,10 @@ constexpr uint32_t kMinRelayOffMs = 2000;   // anti-cycling: min time relay stay
 constexpr float kRampRatePctPerSec = 200.0f; // driver-output ramp speed (soft start/stop)
 constexpr uint32_t kRotaryStableMs = 40;    // rotary debounce window
 
+// Panel ON/OFF rocker: GND + GPIO, internal pull-up. When the labeled ON
+// position closes the switch, the pin reads LOW. Set true so LOW = ON.
+constexpr bool kKillSwitchClosedMeansOn = true;
+
 // If true, the output comes back live at boot (restores last mode/level after a
 // power cut). Default false: boot to output-off, master mode at the knob.
 constexpr bool kRestoreOutputOnBoot = false;
@@ -88,9 +123,11 @@ constexpr bool kRestoreOutputOnBoot = false;
 // ---------------------------------------------------------------------------
 // Calibration table: converter DIM volts -> PWM duty fraction (0..1).
 //
-// Placeholder is linear (duty = volts / 10). Replace with measured points from
-// the `cal` serial sweep once the converter board is on the bench. Keep the
-// entries sorted by ascending volts.
+// This is the converter board, not the load cap. Placeholder is linear
+// (duty = volts / 10). Sweep with `cal` and replace with measured points;
+// keep entries sorted by ascending volts. 100% user level only ever asks
+// for kMaxDimVolts, so the 10 V / 100% duty end is unused until the load
+// cap is 22 A.
 // ---------------------------------------------------------------------------
 struct DimCalPoint {
   float volts;   // measured DIM voltage

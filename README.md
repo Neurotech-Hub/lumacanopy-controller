@@ -11,7 +11,7 @@ indicator LEDs, and a locally-served web app for remote control.
 | ------------------- | ----------- | ---------------------------------------------- |
 | Dim PWM -> converter| 8 (A5)      | LEDC, feeds both driver DIM+ lines             |
 | Relay coil          | 14 (A4)     | DC output side, normally open, active-high     |
-| Kill switch         | 16 (A2)     | INPUT_PULLUP, active-low, maintained           |
+| Kill switch         | 16 (A2)     | to GND; closed = labeled ON, open = OFF        |
 | Rotary pos 1-6      | 5,6,9,10,11,12 | INPUT_PULLUP, common to GND                 |
 | Rotary pos 7        | 15 (A3)     | moved off GPIO13 (onboard-LED conflict)        |
 | Rotary pos 8        | 18 (A0)     |                                                |
@@ -29,13 +29,10 @@ confirm the relay's DC rating. See [docs/CALIBRATION.md](docs/CALIBRATION.md).
 
 ### Libraries
 
-- [Hublink-Node-Raven](https://github.com/Neurotech-Hub/Hublink-Node-Raven)
 - ArduinoJson (v7)
-- **ESP Async WebServer** by ESP32Async
-- **Async TCP** by ESP32Async
 
-Install the ESP32Async fork specifically (the older similarly-named forks are
-unmaintained).
+The web UI uses the ESP32 core `WebServer` (no ESPAsyncWebServer / AsyncTCP).
+Hublink-Node-Raven is not required.
 
 ## Control model
 
@@ -72,7 +69,7 @@ src/
   ControlArbiter.*    master/remote/lockout state machine
   SerialConsole.*     command shell + calibration sweep
   WifiControl.*       STA/SoftAP, NVS creds + PIN, mDNS
-  WebApi.*            REST + WebSocket
+  WebApi.*            REST (ESP32 WebServer)
   web_index.h         embedded web app
 docs/CALIBRATION.md   bench bring-up and calibration
 ```

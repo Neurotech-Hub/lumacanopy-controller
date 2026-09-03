@@ -18,17 +18,13 @@ void DimOutput::begin() {
 float DimOutput::userLevelToOutputPercent(float userPct) {
   if (userPct < 0.0f) userPct = 0.0f;
   if (userPct > 100.0f) userPct = 100.0f;
-  // Map the full user range onto [floor .. maxOutput]. user 0 -> floor,
-  // user 100 -> the current-capped ceiling.
-  const float span = kMaxOutputPercent - kFloorOutputPercent;
-  return kFloorOutputPercent + (userPct / 100.0f) * span;
+  return userPct;
 }
 
-float DimOutput::outputPercentToVolts(float outPct) {
-  if (outPct < kFloorOutputPercent) outPct = kFloorOutputPercent;
-  if (outPct > 100.0f) outPct = 100.0f;
-  // Datasheet dim curve: 1 V -> 10% output, 10 V -> 100% output (linear).
-  return 1.0f + (outPct - kFloorOutputPercent) / 10.0f;
+float DimOutput::outputPercentToVolts(float userPct) {
+  if (userPct < 0.0f) userPct = 0.0f;
+  if (userPct > 100.0f) userPct = 100.0f;
+  return kMinDimVolts + (userPct / 100.0f) * (kMaxDimVolts - kMinDimVolts);
 }
 
 float DimOutput::voltsToDuty01(float volts) {
@@ -84,8 +80,8 @@ void DimOutput::update() {
 }
 
 void DimOutput::applyOutputPercent(float outPct) {
-  if (outPct < kFloorOutputPercent) outPct = kFloorOutputPercent;
-  if (outPct > kMaxOutputPercent) outPct = kMaxOutputPercent; // hard current cap
+  if (outPct < 0.0f) outPct = 0.0f;
+  if (outPct > 100.0f) outPct = 100.0f;
   const float volts = outputPercentToVolts(outPct);
   const float duty01 = voltsToDuty01(volts);
   writeDutyFraction(duty01);
@@ -99,14 +95,14 @@ void DimOutput::writeDutyFraction(float duty01) {
 }
 
 bool DimOutput::atFloor() const {
-  return currentOutPct_ <= kFloorOutputPercent + 0.5f;
+  return currentOutPct_ <= 0.5f;
 }
 
+float DimOutput::dimVolts() const { return outputPercentToVolts(currentOutPct_); }
+
 float DimOutput::estimatedAmps() const {
-  // Rough estimate from the commanded CC setpoint (out% of the 22 A rating).
-  // Actual draw depends on the load and the CV/CC crossover; this is a readout,
-  // not a measurement.
-  return (currentOutPct_ / 100.0f) * kDriverRatedAmps;
+  // 100% user level is kMaxLoadAmps, not the driver's 22 A rating.
+  return (currentOutPct_ / 100.0f) * kMaxLoadAmps;
 }
 
 } // namespace luma

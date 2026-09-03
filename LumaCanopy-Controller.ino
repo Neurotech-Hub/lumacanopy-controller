@@ -10,11 +10,9 @@
 //   - Tools -> USB CDC On Boot: Enabled
 //   - Enter boot mode before flashing (hold Boot, tap Reset, release Boot).
 //
-// Libraries: Hublink-Node-Raven, ArduinoJson, and (for Wi-Fi) the maintained
-// ESP32Async fork -- "ESP Async WebServer" + "Async TCP".
+// Libraries: ArduinoJson. The web UI uses the ESP32 core WebServer.
 
 #include <Arduino.h>
-#include <HublinkNodeRaven.h>
 
 #include "src/Config.h"
 #include "src/DimOutput.h"
@@ -26,8 +24,6 @@
 #include "src/SerialConsole.h"
 #include "src/WifiControl.h"
 #include "src/WebApi.h"
-
-raven::HublinkNode node;
 
 luma::DimOutput dimOutput;
 luma::RelayControl relay;
@@ -46,9 +42,7 @@ void setup() {
   Serial.println();
   Serial.println(F("LumaCanopy Controller booting..."));
 
-  // beginHardware() resets our GPIOs (A5/A4 etc.) to INPUT, so it MUST run
-  // before we configure the dimming/relay pins.
-  node.beginHardware();
+  luma::beginBoard();
 
   dimOutput.begin();
   relay.begin();
@@ -69,18 +63,4 @@ void loop() {
   console.update();
   wifi.update();
   webApi.loop();
-
-  // Push live state to any connected browsers roughly twice a second, plus on
-  // every state change (handled inside the arbiter/webApi).
-  static uint32_t lastPush = 0;
-  const uint32_t now = millis();
-  if (now - lastPush >= 500) {
-    lastPush = now;
-    luma::ControlArbiter::State st;
-    arbiter.snapshot(st);
-    st.wifiConnected = wifi.isConnected();
-    st.ip = wifi.ipString();
-    st.wifiMode = wifi.modeString();
-    webApi.broadcastState(st);
-  }
 }

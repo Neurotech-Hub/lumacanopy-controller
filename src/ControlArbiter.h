@@ -29,7 +29,7 @@ public:
     Mode mode = Mode::Master;
     Mode priorMode = Mode::Master;
     float setpointPct = 0.0f;    // commanded user level 0..100
-    float outputPercent = 0.0f;  // current ramped driver output %
+    float outputPercent = 0.0f;  // current ramped user level %
     bool outputOn = false;       // relay commanded closed
     bool relayClosed = false;    // relay actually closed right now
     int knobPosition = -1;       // 0..7

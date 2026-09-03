@@ -4,10 +4,9 @@
 
 namespace luma {
 
-// Maintained external kill switch on an INPUT_PULLUP pin, active-low.
-//
-// While asserted, the arbiter hard-locks the output off; nothing (knob or
-// Wi-Fi) can override it. Debounced so contact bounce doesn't flap the lockout.
+// Maintained panel ON/OFF switch: GPIO with INPUT_PULLUP, other side to GND.
+// With kKillSwitchClosedMeansOn, closed (LOW) is labeled ON (output allowed)
+// and open (HIGH) is labeled OFF (lockout).
 class KillSwitch {
 public:
   void begin();

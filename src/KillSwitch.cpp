@@ -6,19 +6,24 @@ namespace luma {
 
 namespace {
 constexpr uint32_t kDebounceMs = 30;
+
+// Closed switch pulls the pin to GND (LOW). Open leaves the pull-up (HIGH).
+bool readLockout() {
+  const bool closed = (digitalRead(pins::kKillSwitch) == LOW);
+  return kKillSwitchClosedMeansOn ? !closed : closed;
 }
+} // namespace
 
 void KillSwitch::begin() {
   pinMode(pins::kKillSwitch, INPUT_PULLUP);
-  // Active-low: LOW == asserted (supply off).
-  const bool raw = (digitalRead(pins::kKillSwitch) == LOW);
+  const bool raw = readLockout();
   lastRaw_ = raw;
   lockout_ = raw;
   lastChangeMs_ = millis();
 }
 
 void KillSwitch::update() {
-  const bool raw = (digitalRead(pins::kKillSwitch) == LOW);
+  const bool raw = readLockout();
   const uint32_t now = millis();
 
   if (raw != lastRaw_) {

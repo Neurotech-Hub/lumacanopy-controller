@@ -8,17 +8,6 @@ The tables ship as **placeholders** (linear duty, evenly-spaced knob levels).
 They are safe to flash and let you verify wiring, but the perceived brightness
 will not be right until you replace them with measured values.
 
-## 0. Before power-on (do not skip)
-
-- Fit **10 k pulldowns to GND on GPIO8 (A5, PWM)** and **GPIO14 (A4, relay)**.
-  Both pins float from reset until firmware configures them; without pulldowns
-  the relay can chatter closed with an uncontrolled dim voltage at boot.
-- Confirm the relay's **DC** rating covers the load at 12 V. Dimming floors at
-  ~10% output, so opening the relay always breaks at least ~2.2 A DC per driver.
-- Keep `DIM-` off the driver's `-V` rail (Mean Well explicitly warns against it).
-- Verify the converter board sinks ~200 uA total (100 uA per driver, both
-  `DIM+` lines paralleled).
-
 ## 1. Smoke test (no load)
 
 1. Flash, open Serial at 115200. You should see `Ready.`
@@ -47,21 +36,27 @@ near the rails — that is exactly what this step captures.
 
 ## 3. Current cap (`kMaxLoadAmps`)
 
+This is the only constant to change when the real strip is known. User 0–100%
+maps to **0 V .. kMaxDimVolts**, and `kMaxDimVolts = 10 * (kMaxLoadAmps / 22)`.
+The driver is 22 A at 10 V, so 6 A -> 2.73 V, 18 A -> 8.18 V, 19.4 A -> 8.82 V.
+100% level never asks for 10 V unless the load is actually 22 A.
+
+PWM duty is a separate mapping (`kDimCalibration`): volts -> duty. Fill that
+from the converter sweep; do not "turn up duty to 100%" to get more current.
+
 1. Wire the real strip and a clamp meter on the DC output.
-2. With `cal hold`, step duty upward and watch current. Set `kMaxLoadAmps` to
-   your chosen ceiling (18.0 or 19.4). `kMaxOutputPercent` is derived from it and
-   hard-clamps the PWM so it can never command more than that.
-3. Because the strip is a constant-voltage load and B-type dimming adjusts the
-   constant-current setpoint, expect a **dead zone** at the top (driver stays in
-   CV at 12 V) and nonlinearity below it. Note the duty where current first
-   starts to drop — that is the real top of your usable range.
+2. `level 100` + `on` should land near `kMaxDimVolts` and `kMaxLoadAmps`.
+3. Raise `kMaxLoadAmps` (18.0 or 19.4) when you lock the strip; DIM volts and
+   PWM follow automatically.
+4. Because the strip is a CV load and B-type dimming adjusts the CC setpoint,
+   expect a dead zone near the top. Note where current first starts to drop.
 
 ## 4. Knob levels (`kKnobLevels`)
 
 With the cap set, decide what each of the 8 detents should mean as a *user
-level* (0..100%, which the firmware maps into `[floor .. kMaxOutputPercent]`).
-Drive levels with `level <pct>`, read the clamp meter, and pick 8 values that
-give the visual steps you want. Fill `kKnobLevels[8]` and re-flash.
+level* (0..100%, which maps onto 0 V .. `kMaxDimVolts`). Drive levels with
+`level <pct>`, read the clamp meter, and pick 8 values that give the visual
+steps you want. Fill `kKnobLevels[8]` and re-flash.
 
 ## 5. Verify arbitration
 

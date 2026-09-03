@@ -115,8 +115,9 @@ void SerialConsole::printStatus() {
   Serial.println(F("--- LumaCanopy status ---"));
   Serial.printf("  mode        : %s\n", ControlArbiter::modeName(st.mode));
   Serial.printf("  setpoint    : %.1f%% (user)\n", st.setpointPct);
-  Serial.printf("  driver out  : %.1f%% (cap %.1f%%)\n", st.outputPercent,
-                kMaxOutputPercent);
+  Serial.printf("  dim volts   : %.2f V (cap %.2f V, %.1f A)\n", dim_.dimVolts(),
+                kMaxDimVolts, kMaxLoadAmps);
+  Serial.printf("  ramped      : %.1f%%\n", st.outputPercent);
   Serial.printf("  output on   : %s\n", st.outputOn ? "yes" : "no");
   Serial.printf("  relay       : %s\n", st.relayClosed ? "closed" : "open");
   Serial.printf("  knob pos    : %d\n",

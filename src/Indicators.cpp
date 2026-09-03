@@ -47,7 +47,7 @@ void Indicators::update(bool outputOn, bool lockout, float levelPct,
   } else if (remoteMode) {
     // Breathe between kBreatheFloor and 1.0 of the level brightness.
     const float phase = (now / kBreathePeriodMs);
-    const float wave = 0.5f * (1.0f + sinf(phase * 2.0f * (float)M_PI));
+    const float wave = 0.5f * (1.0f + sinf(phase * 2.0f * 3.14159265f));
     const float scale = kBreatheFloor + (1.0f - kBreatheFloor) * wave;
     brightness *= scale;
   }

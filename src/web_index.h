@@ -122,21 +122,15 @@ function render(s){
   out.className = 'toggle ' + (s.outputOn ? 'on' : 'off');
 
   $('meta').innerHTML =
-    'driver output: ' + s.outputPercent.toFixed(0) + '% &nbsp;|&nbsp; relay: ' + (s.relayClosed?'closed':'open') +
-    '<br>current cap: ' + s.maxLevelPct.toFixed(0) + '% level';
+    'level: ' + s.outputPercent.toFixed(0) + '% &nbsp;|&nbsp; relay: ' + (s.relayClosed?'closed':'open') +
+    '<br>load cap: ' + (s.maxLoadAmps||0).toFixed(1) + ' A at ' + (s.maxDimVolts||0).toFixed(2) + ' V DIM';
 }
 
-// WebSocket for live state
-let ws;
-function connect(){
-  ws = new WebSocket('ws://' + location.host + '/ws');
-  ws.onmessage = e => { try { render(JSON.parse(e.data)); } catch(_){} };
-  ws.onclose = () => setTimeout(connect, 1500);
+function poll(){
+  fetch('/api/state').then(r=>r.json()).then(render).catch(()=>{});
 }
-connect();
-
-// Fallback initial fetch
-fetch('/api/state').then(r=>r.json()).then(render).catch(()=>{});
+poll();
+setInterval(poll, 500);
 
 // Slider: commit on release (enters remote mode)
 $('slider').addEventListener('input', ()=>{ suppressSlider = true; $('lvl').textContent = $('slider').value; });
