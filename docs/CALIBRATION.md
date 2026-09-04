@@ -34,20 +34,21 @@ board. Put a voltmeter across `DIM+/DIM-`.
 Note: many 0-10V converter boards are close to linear but have offset/clipping
 near the rails — that is exactly what this step captures.
 
-## 3. Current cap (`kMaxLoadAmps`)
+## 3. Current cap (`maxamps`)
 
-This is the only constant to change when the real strip is known. User 0–100%
-maps to **0 V .. kMaxDimVolts**, and `kMaxDimVolts = 10 * (kMaxLoadAmps / 22)`.
+The live cap is stored in NVS (serial: `maxamps` to read, `maxamps 6` to set).
+Factory default is `kDefaultMaxLoadAmps` in Config.h. User 0–100% maps to
+**0 V .. maxDimVolts**, and `maxDimVolts = 10 * (maxLoadAmps / 22)`.
 The driver is 22 A at 10 V, so 6 A -> 2.73 V, 18 A -> 8.18 V, 19.4 A -> 8.82 V.
-100% level never asks for 10 V unless the load is actually 22 A.
+100% level never asks for 10 V unless the stored cap is 22 A.
 
 PWM duty is a separate mapping (`kDimCalibration`): volts -> duty. Fill that
 from the converter sweep; do not "turn up duty to 100%" to get more current.
 
 1. Wire the real strip and a clamp meter on the DC output.
-2. `level 100` + `on` should land near `kMaxDimVolts` and `kMaxLoadAmps`.
-3. Raise `kMaxLoadAmps` (18.0 or 19.4) when you lock the strip; DIM volts and
-   PWM follow automatically.
+2. `level 100` + `on` should land near the DIM cap and the stored amps.
+3. `maxamps 18` (or 19.4) when you lock the strip; it is remembered across
+   reset. DIM volts and PWM follow automatically.
 4. Because the strip is a CV load and B-type dimming adjusts the CC setpoint,
    expect a dead zone near the top. Note where current first starts to drop.
 
@@ -60,7 +61,7 @@ from the converter sweep; do not "turn up duty to 100%" to get more current.
 
 
 With the cap set, decide what each of the 8 detents should mean as a *user
-level* (0..100%, which maps onto 0 V .. `kMaxDimVolts`). Drive levels with
+level* (0..100%, which maps onto 0 V .. maxDimVolts). Drive levels with
 `level <pct>`, read the clamp meter, and pick 8 values that give the visual
 steps you want. Fill `kKnobLevels[8]` and re-flash.
 

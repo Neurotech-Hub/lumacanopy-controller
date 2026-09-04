@@ -1,6 +1,7 @@
 #include "SerialConsole.h"
 
 #include "Config.h"
+#include "LoadCap.h"
 
 namespace luma {
 
@@ -49,6 +50,19 @@ void SerialConsole::handleLine(const String &line) {
   } else if (cmd == "release") {
     arbiter_.requestRelease();
     Serial.println(F("OK released to knob"));
+  } else if (cmd == "maxamps" || cmd == "amps") {
+    if (args.length() == 0) {
+      Serial.printf("maxLoadAmps = %.2f A (DIM cap %.2f V, driver %.0f A)\n",
+                    maxLoadAmps(), maxDimVolts(), kDriverRatedAmps);
+    } else {
+      const float amps = args.toFloat();
+      if (!setMaxLoadAmps(amps)) {
+        Serial.printf("ERR maxamps must be %.1f .. %.1f A\n", 0.5f, kDriverRatedAmps);
+      } else {
+        Serial.printf("OK maxLoadAmps -> %.2f A (DIM cap %.2f V, stored in NVS)\n",
+                      maxLoadAmps(), maxDimVolts());
+      }
+    }
   } else if (cmd == "cal") {
     handleCal(args);
   } else {
@@ -103,6 +117,7 @@ void SerialConsole::printHelp() {
   Serial.println(F("  level <0-100>       remote mode, set level %"));
   Serial.println(F("  on | off            relay output on/off"));
   Serial.println(F("  release             hand control back to the knob"));
+  Serial.println(F("  maxamps [A]         show or set load cap (NVS, 0.5-22)"));
   Serial.println(F("  cal hold|release    suspend/resume arbiter PWM control"));
   Serial.println(F("  cal duty <0-100>    set raw PWM duty %"));
   Serial.println(F("  cal step            advance 0..100% sweep one notch"));
@@ -116,7 +131,7 @@ void SerialConsole::printStatus() {
   Serial.printf("  mode        : %s\n", ControlArbiter::modeName(st.mode));
   Serial.printf("  setpoint    : %.1f%% (user)\n", st.setpointPct);
   Serial.printf("  dim volts   : %.2f V (cap %.2f V, %.1f A)\n", dim_.dimVolts(),
-                kMaxDimVolts, kMaxLoadAmps);
+                maxDimVolts(), maxLoadAmps());
   Serial.printf("  ramped      : %.1f%%\n", st.outputPercent);
   Serial.printf("  output on   : %s\n", st.outputOn ? "yes" : "no");
   Serial.printf("  relay       : %s\n", st.relayClosed ? "closed" : "open");
@@ -124,7 +139,7 @@ void SerialConsole::printStatus() {
                 st.knobPosition >= 0 ? st.knobPosition + 1 : 0);
   Serial.printf("  lockout     : %s\n", st.lockout ? "YES" : "no");
   Serial.printf("  est. amps   : %.1f A (of %.1f A cap)\n", st.estimatedAmps,
-                kMaxLoadAmps);
+                maxLoadAmps());
   Serial.printf("  manual hold : %s\n", dim_.isManualHold() ? "ON (cal)" : "off");
 }
 

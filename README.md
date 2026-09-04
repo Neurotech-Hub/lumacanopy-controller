@@ -46,9 +46,9 @@ Hublink-Node-Raven is not required.
 
 ## Serial console (115200)
 
-`help`, `status`, `level <0-100>`, `on`, `off`, `release`, and the `cal`
-sub-commands used to build the converter lookup table. See
-[docs/CALIBRATION.md](docs/CALIBRATION.md).
+`help`, `status`, `level <0-100>`, `on`, `off`, `release`, `maxamps [A]`
+(NVS load cap), and the `cal` sub-commands used to build the converter lookup
+table. See [docs/CALIBRATION.md](docs/CALIBRATION.md).
 
 ## Web app
 
@@ -62,8 +62,9 @@ action requires the access PIN. This is same-network only.
 ```
 LumaCanopy-Controller.ino   setup/loop, wiring of modules
 src/
-  Config.h            pins, current cap, calibration tables
-  DimOutput.*         PWM, level->volts->duty, ramp, current cap
+  Config.h            pins, factory defaults, calibration tables
+  LoadCap.*           NVS-backed maxLoadAmps / DIM voltage cap
+  DimOutput.*         PWM, level->volts->duty, ramp
   RelayControl.*      relay + anti-cycling
   RotarySwitch.*      debounced 8-position knob
   KillSwitch.*        maintained lockout input

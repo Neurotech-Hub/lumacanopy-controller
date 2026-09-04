@@ -19,6 +19,7 @@ namespace luma {
 //   cal duty <0-100>     - set raw PWM duty % (enables hold)
 //   cal step             - advance the 0..100% sweep one notch and print target
 //   cal reset            - reset the sweep index
+//   maxamps [A]          - show or set the load cap (persisted in NVS)
 class SerialConsole {
 public:
   SerialConsole(ControlArbiter &arbiter, DimOutput &dim);

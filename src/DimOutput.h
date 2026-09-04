@@ -7,7 +7,7 @@ namespace luma {
 // Owns the LEDC PWM channel that feeds the 0-10V converter board.
 //
 // Maps a user-facing level (0..100%) through:
-//   user% -> DIM volts in [0, kMaxDimVolts] (kMaxDimVolts from kMaxLoadAmps)
+//   user% -> DIM volts in [0, maxDimVolts()] (from NVS maxLoadAmps)
 //         -> PWM duty via kDimCalibration
 //
 // Soft-ramps so relay make/break and setpoint changes never step instantly.

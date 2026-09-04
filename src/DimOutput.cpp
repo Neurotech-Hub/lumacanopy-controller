@@ -1,6 +1,7 @@
 #include "DimOutput.h"
 
 #include "Config.h"
+#include "LoadCap.h"
 
 namespace luma {
 
@@ -24,7 +25,7 @@ float DimOutput::userLevelToOutputPercent(float userPct) {
 float DimOutput::outputPercentToVolts(float userPct) {
   if (userPct < 0.0f) userPct = 0.0f;
   if (userPct > 100.0f) userPct = 100.0f;
-  return kMinDimVolts + (userPct / 100.0f) * (kMaxDimVolts - kMinDimVolts);
+  return kMinDimVolts + (userPct / 100.0f) * (maxDimVolts() - kMinDimVolts);
 }
 
 float DimOutput::voltsToDuty01(float volts) {
@@ -106,8 +107,8 @@ bool DimOutput::atFloor() const {
 float DimOutput::dimVolts() const { return outputPercentToVolts(currentOutPct_); }
 
 float DimOutput::estimatedAmps() const {
-  // 100% user level is kMaxLoadAmps, not the driver's 22 A rating.
-  return (currentOutPct_ / 100.0f) * kMaxLoadAmps;
+  // 100% user level is the NVS load cap, not the driver's 22 A rating.
+  return (currentOutPct_ / 100.0f) * maxLoadAmps();
 }
 
 } // namespace luma

@@ -15,6 +15,7 @@
 #include <Arduino.h>
 
 #include "src/Config.h"
+#include "src/LoadCap.h"
 #include "src/DimOutput.h"
 #include "src/RelayControl.h"
 #include "src/RotarySwitch.h"
@@ -46,6 +47,7 @@ void setup() {
   Serial.println(F("LumaCanopy Controller booting..."));
 
   luma::beginBoard();
+  luma::beginLoadCap();
 
   dimOutput.begin();
   relay.begin();

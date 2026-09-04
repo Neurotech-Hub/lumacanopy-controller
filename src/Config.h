@@ -86,19 +86,14 @@ constexpr uint32_t kLevelLedMaxDuty = (1u << kLevelLedResBits) - 1u;
 // ---------------------------------------------------------------------------
 // Current / output caps.
 //
-// THE knob for later: change kMaxLoadAmps only. The driver is 22 A at 10 V DIM.
-//  We never command 10 V unless the load is actually 22 A. 
-// User 0..100% maps to 0 V .. kMaxDimVolts, then PWM duty is looked up in 
-// kDimCalibration (replace that table once the converter is measured -- 
-// it is independent of the load cap).
+// Factory default for the NVS-backed runtime cap (serial: `maxamps <A>`).
+// The live value is luma::maxLoadAmps(); 10 V DIM is 22 A on the driver, so
+// 100% user level only asks for 10 V if the stored cap is 22 A.
 //
 // Datasheet: DIM volts ~= 10 * (amps / 22). 6 A -> 2.73 V, 18 A -> 8.18 V.
-// ---------------------------------------------------------------------------
 constexpr float kDriverRatedAmps = 22.0f;
-constexpr float kMaxLoadAmps = 22.0f; // TODO(bench): raise to 18.0 after the strip is known
-constexpr float kMaxOutputPercent = (kMaxLoadAmps / kDriverRatedAmps) * 100.0f;
+constexpr float kDefaultMaxLoadAmps = 18.0f;
 constexpr float kMinDimVolts = 0.0f;
-constexpr float kMaxDimVolts = 10.0f * (kMaxLoadAmps / kDriverRatedAmps);
 
 // Commanded "off" / pre-relay-open DIM target. 0 V is still ~10% driver
 // current on HLG-B; the relay is the true shutoff.
@@ -126,7 +121,7 @@ constexpr bool kRestoreOutputOnBoot = false;
 // This is the converter board, not the load cap. Placeholder is linear
 // (duty = volts / 10). Sweep with `cal` and replace with measured points;
 // keep entries sorted by ascending volts. 100% user level only ever asks
-// for kMaxDimVolts, so the 10 V / 100% duty end is unused until the load
+// for maxDimVolts(), so the 10 V / 100% duty end is unused until the load
 // cap is 22 A.
 // ---------------------------------------------------------------------------
 struct DimCalPoint {

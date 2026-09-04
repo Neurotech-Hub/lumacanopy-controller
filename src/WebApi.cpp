@@ -3,6 +3,7 @@
 #include <ArduinoJson.h>
 
 #include "Config.h"
+#include "LoadCap.h"
 #include "web_index.h"
 
 namespace luma {
@@ -38,8 +39,8 @@ String WebApi::currentStateJson() {
   doc["maxBlinkHz"] = kMaxBlinkHz;
   doc["lockout"] = st.lockout;
   doc["maxLevelPct"] = st.maxLevelPct;
-  doc["maxLoadAmps"] = kMaxLoadAmps;
-  doc["maxDimVolts"] = kMaxDimVolts;
+  doc["maxLoadAmps"] = maxLoadAmps();
+  doc["maxDimVolts"] = maxDimVolts();
   doc["estimatedAmps"] = st.estimatedAmps;
   doc["wifiConnected"] = st.wifiConnected;
   doc["wifiMode"] = st.wifiMode;
