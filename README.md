@@ -36,7 +36,9 @@ Hublink-Node-Raven is not required.
 
 ## Control model
 
-- **Knob (master):** 8 positions map to preset levels via `kKnobLevels`.
+- **Knob (master):** each of the 8 positions runs a programmable slot (steady /
+  blink / breathe / off), stored in NVS and editable from the web UI's dial.
+  `kKnobLevels` is only the factory default level for each slot.
 - **Remote:** serial commands or the web app set a precise level.
 - Turning the knob (any movement) reclaims master control from remote.
 - The kill switch hard-locks the output off; nothing can override it.

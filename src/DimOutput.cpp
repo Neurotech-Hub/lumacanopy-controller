@@ -56,6 +56,10 @@ void DimOutput::setToFloor() {
   // while the output is off.
 }
 
+void DimOutput::setSlewOverride(float pctPerSec) {
+  slewOverride_ = (pctPerSec > 0.0f) ? pctPerSec : 0.0f;
+}
+
 void DimOutput::setManualHold(bool on) {
   manualHold_ = on;
   lastRampMs_ = millis();
@@ -69,7 +73,8 @@ void DimOutput::update() {
   if (dt <= 0.0f) return;
   if (dt > 0.25f) dt = 0.25f; // clamp after a long stall so we don't jump
 
-  const float maxStep = kRampRatePctPerSec * dt;
+  const float rate = (slewOverride_ > 0.0f) ? slewOverride_ : kRampRatePctPerSec;
+  const float maxStep = rate * dt;
   const float delta = targetOutPct_ - currentOutPct_;
   if (fabsf(delta) <= maxStep) {
     currentOutPct_ = targetOutPct_;

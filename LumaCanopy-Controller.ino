@@ -20,6 +20,7 @@
 #include "src/RotarySwitch.h"
 #include "src/KillSwitch.h"
 #include "src/Indicators.h"
+#include "src/SlotStore.h"
 #include "src/ControlArbiter.h"
 #include "src/SerialConsole.h"
 #include "src/WifiControl.h"
@@ -30,11 +31,13 @@ luma::RelayControl relay;
 luma::RotarySwitch rotary;
 luma::KillSwitch killSwitch;
 luma::Indicators indicators;
+luma::SlotStore slots;
 
-luma::ControlArbiter arbiter(dimOutput, relay, rotary, killSwitch, indicators);
+luma::ControlArbiter arbiter(dimOutput, relay, rotary, killSwitch, indicators,
+                             slots);
 luma::SerialConsole console(arbiter, dimOutput);
 luma::WifiControl wifi;
-luma::WebApi webApi(arbiter, wifi);
+luma::WebApi webApi(arbiter, wifi, slots);
 
 void setup() {
   Serial.begin(115200);
@@ -49,6 +52,7 @@ void setup() {
   rotary.begin();
   killSwitch.begin();
   indicators.begin();
+  slots.begin(); // must precede arbiter.begin(); it reads the boot slot
   arbiter.begin();
   console.begin();
 

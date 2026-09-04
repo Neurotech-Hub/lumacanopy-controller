@@ -25,6 +25,10 @@ public:
   // Ramp toward the current target and write the PWM. Call every loop.
   void update();
 
+  // Ramp rate override for effect playback. 0 restores kRampRatePctPerSec.
+  // Only OutStage::On sets this; relay sequencing keeps the gentle default.
+  void setSlewOverride(float pctPerSec);
+
   // Calibration hold: while enabled, update() stops writing so a raw duty set
   // via writeDutyFraction() stays put and isn't clobbered by the ramp loop.
   void setManualHold(bool on);
@@ -52,6 +56,7 @@ private:
   float targetOutPct_ = 0.0f;   // ramped user %, what we're heading toward
   float currentOutPct_ = 0.0f;  // ramped user %, current value
   uint32_t lastRampMs_ = 0;
+  float slewOverride_ = 0.0f;   // 0 = use kRampRatePctPerSec
   bool begun_ = false;
   bool manualHold_ = false;
 };

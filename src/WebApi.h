@@ -4,6 +4,7 @@
 #include <WebServer.h>
 
 #include "ControlArbiter.h"
+#include "SlotStore.h"
 #include "WifiControl.h"
 
 namespace luma {
@@ -14,7 +15,7 @@ namespace luma {
 // "pin" form field).
 class WebApi {
 public:
-  WebApi(ControlArbiter &arbiter, WifiControl &wifi);
+  WebApi(ControlArbiter &arbiter, WifiControl &wifi, SlotStore &slots);
   void begin();
   void loop();
 
@@ -32,8 +33,15 @@ private:
   void handleWifi();
   void handleNotFound();
 
+  // Programmable knob slots.
+  void handleSlotsGet();     // GET  /api/slots      -> all 8 programs
+  void handleSlotsPost();    // POST /api/slots      -> write one program
+  void handleSlotSelect();   // POST /api/slot?i=N   -> run program N remotely
+  void handleSlotsReset();   // POST /api/slots/reset
+
   ControlArbiter &arbiter_;
   WifiControl &wifi_;
+  SlotStore &slots_;
   WebServer server_;
 };
 

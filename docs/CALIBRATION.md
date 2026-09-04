@@ -51,7 +51,13 @@ from the converter sweep; do not "turn up duty to 100%" to get more current.
 4. Because the strip is a CV load and B-type dimming adjusts the CC setpoint,
    expect a dead zone near the top. Note where current first starts to drop.
 
-## 4. Knob levels (`kKnobLevels`)
+## 4. Knob levels (`kKnobLevels` — factory defaults)
+
+> Since the slots became programmable, `kKnobLevels` seeds the *factory default*
+> steady level for each position. Live values are stored in NVS and edited from
+> the web UI, so changing this table only affects a fresh board or a slot reset.
+> Bench-measure the curve here anyway — that is what the defaults should be.
+
 
 With the cap set, decide what each of the 8 detents should mean as a *user
 level* (0..100%, which maps onto 0 V .. `kMaxDimVolts`). Drive levels with

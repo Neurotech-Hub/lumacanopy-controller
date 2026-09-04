@@ -158,9 +158,39 @@ constexpr size_t kDimCalibrationCount =
 // is nonlinear with a dead zone near the top: fill these from measured
 // clamp-meter readings on bench day.
 // ---------------------------------------------------------------------------
+// These are now the *factory defaults* for the eight programmable slots (see
+// SlotStore); the live values are in NVS and editable from the web UI.
 constexpr float kKnobLevels[8] = {
     12.5f, 25.0f, 37.5f, 50.0f, 62.5f, 75.0f, 87.5f, 100.0f,
 };
+
+// ---------------------------------------------------------------------------
+// Programmable slot effects.
+//
+// Each knob position is a program (steady / blink / breathe / off), not just a
+// level. Two hard rules are baked in here:
+//
+//  1. Effects NEVER cycle the relay. Blink and breathe live entirely in the DIM
+//     domain with the relay held closed -- it is a mechanical contactor with
+//     kMinRelayOffMs anti-cycling, and blinking it would wear the contacts out
+//     in days. Consequence: because DIM 0 V is still ~10% driver current on
+//     HLG-B (see kFloorOutputPercent), an effect's "low" is a dip, not darkness.
+//
+//  2. Effect rate is capped. 3-60 Hz flicker (worst around 15-25 Hz) is a
+//     photosensitive-seizure band and this canopy sits over people. The
+//     converter's RC filter would probably smother anything fast anyway; this
+//     makes the limit deliberate instead of accidental. Raise kMaxBlinkHz only
+//     with that in mind.
+// ---------------------------------------------------------------------------
+constexpr float kMaxBlinkHz = 2.0f;
+constexpr uint16_t kMinEffectPeriodMs = (uint16_t)(1000.0f / kMaxBlinkHz);
+constexpr uint16_t kMinEffectPhaseMs = 120;    // per on/off phase
+constexpr uint16_t kMaxEffectPhaseMs = 60000;  // 60 s, for slow breathes
+
+// While a dynamic effect runs, DimOutput uses this slew instead of
+// kRampRatePctPerSec so the ramp limiter doesn't reshape the waveform into
+// mush. Relay make/break sequencing always uses the gentle default rate.
+constexpr float kEffectSlewPctPerSec = 1200.0f;
 
 // ---------------------------------------------------------------------------
 // Wi-Fi / web.
